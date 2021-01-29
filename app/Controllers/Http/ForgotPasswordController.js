@@ -5,6 +5,9 @@ const crypto = require('crypto')
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const User = use('App/Models/User')
 
+/** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
+const Mail = use('Mail')
+
 /** @typedef {import('@adonisjs/framework/src/Request')} Request */
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 class ForgotPasswordController {
@@ -22,6 +25,20 @@ class ForgotPasswordController {
       user.token_created_at = new Date()
 
       await user.save()
+
+      await Mail.send(
+        ['emails.forgot_password'],
+        {
+          email,
+          token: user.token,
+          link: `${request.input('redirect_url')}?token=${user.token}`
+        },
+        message => {
+          message
+            .to(user.email)
+            .from('allexis.soares@luby.software', 'Allexis | Luby')
+            .subject('Recuperação de senha')
+        })
     } catch (err) {
       return response.status(err.status).send({ error: { message: 'Algo não deu certo, esse e-mail existe?' } })
     }
