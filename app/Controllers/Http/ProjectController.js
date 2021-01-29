@@ -7,8 +7,14 @@ const Project = use('App/Models/Project')
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/auth/src/Schemes/Session')} AuthSession */
 class ProjectController {
-  async index () {
-    const projects = await Project.query().with('user').fetch()
+  /**
+   * @param {object} ctx
+   * @param {Request} ctx.request
+   */
+  async index ({ request }) {
+    const { page } = request.get()
+
+    const projects = await Project.query().with('user').paginate(page)
 
     return projects
   }
