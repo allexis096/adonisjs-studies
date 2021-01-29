@@ -1,6 +1,7 @@
 'use strict'
 
 const crypto = require('crypto')
+const moment = require('moment')
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const User = use('App/Models/User')
@@ -40,7 +41,40 @@ class ForgotPasswordController {
             .subject('Recuperação de senha')
         })
     } catch (err) {
-      return response.status(err.status).send({ error: { message: 'Algo não deu certo, esse e-mail existe?' } })
+      return response
+        .status(err.status)
+        .send({ error: { message: 'Algo não deu certo, esse e-mail existe?' } })
+    }
+  }
+
+  /**
+   * @param {object} ctx
+   * @param {Request} ctx.request
+   * @param {Response} ctx.response
+   */
+  async update ({ request, response }) {
+    try {
+      const { token, password } = request.all()
+
+      const user = await User.findByOrFail('token', token)
+
+      const tokenExpired = moment().subtract('2', 'days').isAfter(user.token_created_at)
+
+      if (tokenExpired) {
+        return response
+          .status(401)
+          .send({ error: { message: 'O token de expiração está expirado' } })
+      }
+
+      user.token = null
+      user.token_created_at = null
+      user.password = password
+
+      await user.save()
+    } catch (err) {
+      return response
+        .status(err.status)
+        .send({ error: { message: 'Algo deu errado ao resetar sua senha' } })
     }
   }
 }
